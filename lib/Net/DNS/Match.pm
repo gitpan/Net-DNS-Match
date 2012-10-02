@@ -25,7 +25,7 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 
 # Preloaded methods go here.
@@ -46,65 +46,51 @@ sub add {
 	
 	$array = [ $array ] unless(ref($array) eq 'ARRAY');
 	
-	foreach my $e (@$array){
-		my $first = _get_index($e);
-		push(@{$self->{'list'}->{$first}},$e);
+	my @tmp = sort { $a cmp $b } @$array;
+	
+	foreach my $e (@tmp){
+		push(@{$self->{'list'}},$e);
 	}
 }
 
+# ref:
+# http://www.perltutorial.org/perl-binary-search.aspx
+# http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
 sub match {
 	my $self   = shift;
-	my $things = shift;
+	my $thing  = shift;
 	
-	$things = [ $things ] unless(ref($things) eq 'ARRAY');
-	
-	my $matches;
-
-    ## TODO:
-    # http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
-	foreach my $thing (@$things){
-	   # first we have to see if this exact domain is in the list
-	   if($self->_match($thing)){
-	   	   push(@$matches,$thing);
-	   } else {  
-		   # if not, we check to see if the subseqent tiered domains
-		   # are in the list somewhere
-		   my @bits = split(/\./,$thing);
-	       my $domain = $bits[$#bits-1].'.'.$bits[$#bits];
-	       if(my $ret = $self->_match($domain)){
-	           push(@$matches,$thing);
-	       }
-
-	   }
-	   
-	}
-	
-	return($matches);
-}
-
-sub _match {
-	my $self = shift;
-	my $thing = shift;
-	
-	my $first = _get_index($thing);
-	return unless(exists($self->{'list'}->{$first}));
-	 
-    my $local_list = $self->{'list'}->{$first};
-    foreach my $m (@$local_list){
-        return 1 if($thing =~ /\.?$m$/);
+    my $local_list = $self->{'list'};
+    
+    my $lb = 0;
+    my $ub = $#{$local_list};
+         
+    if($ub == 0){
+        my $tmp = @{$local_list}[0];
+        return $thing if($thing =~ /\.?$tmp$/);
     }
-}
-	 
-
-sub _get_index {
-	my $thing = shift;
-	return unless($thing);
-	
-	# three is probably the highest we should go
-	# incase we have something like a.cz, etc
-	return lc(substr($thing,0,3));
-}
-	
+    
+    while($lb != $ub){      
+        # probe should be in the middle of the region
+        my $mid = int(($lb + $ub) / 2);
+        
+        # fetch the item at that pos
+        my $item = @{$local_list}[$mid];
+        
+        # How does the probed item compare to the target?
+        
+        # found it
+        return $thing if($thing =~ /\.?$item$/);
+        if($item gt $thing){
+            # use the upper half of the region next time
+            $lb = $mid + 1;
+        } else {
+            # use the lower half
+            $ub = $mid;
+        }
+    }
+    return 0;
+}	
 
 1;
 __END__

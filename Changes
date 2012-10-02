@@ -1,10 +1,13 @@
 Revision history for Perl extension Net::DNS::Match.
 
-0.02  2012-10-02
+0.03    2012-10-02
+    - implemented as binary search
+
+0.02    2012-10-02
     - updated _get_index function to use first 3 values
     - todo: http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
 
-0.01  Sat Sep 22 13:24:35 2012
+0.01    Sat Sep 22 13:24:35 2012
 	- original version; created by h2xs 1.23 with options
 		-X -A -b 5.8.8 Net::DNS::Match
 

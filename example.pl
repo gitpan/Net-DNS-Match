@@ -13,8 +13,8 @@ my $match = Net::DNS::Match->new();
 $match->add([
     'xyz.yahoo.com',
     'google.com',
+    'test.ca.undernet.org',
     'www.facebook.com',
-    'undernet.org',
  ]);
  
  die ::Dumper($match->match($addr));
