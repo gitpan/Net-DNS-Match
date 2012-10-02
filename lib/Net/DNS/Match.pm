@@ -25,7 +25,7 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 # Preloaded methods go here.
@@ -47,7 +47,7 @@ sub add {
 	$array = [ $array ] unless(ref($array) eq 'ARRAY');
 	
 	foreach my $e (@$array){
-		my $first = lc(substr($e,0,1));
+		my $first = _get_index($e);
 		push(@{$self->{'list'}->{$first}},$e);
 	}
 }
@@ -59,7 +59,9 @@ sub match {
 	$things = [ $things ] unless(ref($things) eq 'ARRAY');
 	
 	my $matches;
-	
+
+    ## TODO:
+    # http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
 	foreach my $thing (@$things){
 	   # first we have to see if this exact domain is in the list
 	   if($self->_match($thing)){
@@ -84,7 +86,7 @@ sub _match {
 	my $self = shift;
 	my $thing = shift;
 	
-	my $first = _get_first($thing);
+	my $first = _get_index($thing);
 	return unless(exists($self->{'list'}->{$first}));
 	 
     my $local_list = $self->{'list'}->{$first};
@@ -94,11 +96,13 @@ sub _match {
 }
 	 
 
-sub _get_first {
+sub _get_index {
 	my $thing = shift;
 	return unless($thing);
 	
-	return lc(substr($thing,0,1));
+	# three is probably the highest we should go
+	# incase we have something like a.cz, etc
+	return lc(substr($thing,0,3));
 }
 	
 
