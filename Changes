@@ -1,5 +1,8 @@
 Revision history for Perl extension Net::DNS::Match.
 
+0.04    2012-10-10
+    - bugfix
+
 0.03    2012-10-02
     - implemented as binary search
 

@@ -25,8 +25,7 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.03';
-
+our $VERSION = '0.04';
 
 # Preloaded methods go here.
 
@@ -46,22 +45,28 @@ sub add {
 	
 	$array = [ $array ] unless(ref($array) eq 'ARRAY');
 	
-	my @tmp = sort { $a cmp $b } @$array;
+	# map out by highest level root first
+	# count how many .'s appear in the fqdn
+	my @tmp = map { [ ($_ =~ tr/\.//), $_ ] } @$array;
+	
+	# sort by highest tld down, then by fqdn
+	@tmp = sort { $a->[0] <=> $b->[0] || $a->[1] cmp $b->[1] } @tmp;
 	
 	foreach my $e (@tmp){
-		push(@{$self->{'list'}},$e);
-	}
+        push(@{$self->{'list'}},$e->[1]);
+    }
 }
 
 # ref:
 # http://www.perltutorial.org/perl-binary-search.aspx
 # http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
 sub match {
-	my $self   = shift;
-	my $thing  = shift;
-	
+    my $self   = shift;
+    my $thing  = shift;
+
+    return 0 unless($self->{'list'});
     my $local_list = $self->{'list'};
-    
+        
     my $lb = 0;
     my $ub = $#{$local_list};
          
@@ -88,9 +93,10 @@ sub match {
             # use the lower half
             $ub = $mid;
         }
-    }
+    }    
     return 0;
-}	
+}   
+
 
 1;
 __END__
