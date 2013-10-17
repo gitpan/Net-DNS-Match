@@ -25,7 +25,8 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
+$VERSION = eval $VERSION;
 
 # Preloaded methods go here.
 
@@ -40,63 +41,101 @@ sub new {
 }
 
 sub add {
-	my $self = shift;
-	my $array = shift;
-	
-	$array = [ $array ] unless(ref($array) eq 'ARRAY');
-	
-	# map out by highest level root first
-	# count how many .'s appear in the fqdn
-	my @tmp = map { [ ($_ =~ tr/\.//), $_ ] } @$array;
-	
-	# sort by highest tld down, then by fqdn
-	@tmp = sort { $a->[0] <=> $b->[0] || $a->[1] cmp $b->[1] } @tmp;
-	
-	foreach my $e (@tmp){
-        push(@{$self->{'list'}},$e->[1]);
+    my $self    = shift;
+    my $array   = shift;
+    
+    $array = [ $array ] unless(ref($array) eq 'ARRAY');
+    
+    # sort this first, make sure the top level fqdn's come first.
+    # in the event anyone puts in both test.example.com, test2.example.com AND example.com
+    # this should make sure the top-level 'example.com' makes it in first, and the rest are
+    # rejected
+    @{$array} = sort { length $a <=> length $b } @$array;
+    
+    foreach (@$array){
+        $self->_add($_,$_);
     }
 }
 
-# ref:
-# http://www.perltutorial.org/perl-binary-search.aspx
-# http://www.openbookproject.net/thinkcs/python/english3e/list_algorithms.html#binary-search
-sub match {
-    my $self   = shift;
-    my $thing  = shift;
+sub _add {
+    my $self    = shift;
+    my $string  = shift;
+    my $data    = shift;
+    
+    my @bits    = split('\.',$string);
+    my $tld     = $bits[$#bits];
+    pop(@bits);
 
-    return 0 unless($self->{'list'});
-    my $local_list = $self->{'list'};
-        
-    my $lb = 0;
-    my $ub = $#{$local_list};
-         
-    if($ub == 0){
-        my $tmp = @{$local_list}[0];
-        return $thing if($thing =~ /\.?$tmp$/);
+    my $rest    = join('.',@bits);
+    
+    $self->{'children'} = {} unless(defined($self->{'children'}));
+    my $children = $self->{'children'};
+    
+    unless(exists($children->{$tld})){
+        $children->{$tld} = Net::DNS::Match->new();
     }
     
-    while($lb != $ub){      
-        # probe should be in the middle of the region
-        my $mid = int(($lb + $ub) / 2);
-        
-        # fetch the item at that pos
-        my $item = @{$local_list}[$mid];
-        
-        # How does the probed item compare to the target?
-        
-        # found it
-        return $thing if($thing =~ /\.?$item$/);
-        if($item gt $thing){
-            # use the upper half of the region next time
-            $lb = $mid + 1;
-        } else {
-            # use the lower half
-            $ub = $mid;
-        }
-    }    
-    return 0;
-}   
+    my $child = $children->{$tld};
+    if($#bits > -1){
+        # recursive, unless we've already got a leaf that accounts for this
+        # node, then bypass it
+        $child->_add($rest,$data) unless($child->{'value'});
+    } else {
+        $child->{'data'} = $data;
+        $child->{'value'} = 1;
+    }
 
+    return 1;
+}
+
+sub match { 
+    my $self    = shift;
+    my $string  = shift;
+    
+    my ($res,$data) = $self->_match($string);
+    return $string if($res);
+    
+    my @bits = split('\.',$string);
+    return 0 if($#bits < 2); # we're tld, no match, move on...
+    
+    # work our way back through the address
+    my $t = $bits[$#bits-1].'.'.$bits[$#bits];
+
+    ($res,$data) = $self->_match($t);
+    return $data if($res);
+    
+    # pop the top-level
+    pop(@bits); pop(@bits);
+    @bits = reverse(@bits);
+    foreach my $b (@bits){
+        $t = $b.'.'.$t;
+        ($res,$data) = $self->_match($t);
+        return $data if($res);
+    }
+    return 0;
+}
+
+sub _match {
+    my $self    = shift;
+    my $string  = shift;
+    
+    my @bits    = split('\.',$string);
+    my $tld     = $bits[$#bits];
+    my $size    = $#bits;
+    pop(@bits);
+
+    my $rest = join('.',@bits);
+    
+    $self->{'children'} = {} unless(defined($self->{'children'}));
+    my $children = $self->{'children'};
+    
+    return 0 unless(exists($children->{$tld}));
+    if($size == 0){
+        return ($children->{$tld}->{'value'},$children->{$tld}->{'data'});
+    } else {
+        return $children->{$tld}->_match($rest);
+    }
+}
 
 1;
 __END__
@@ -111,14 +150,14 @@ Net::DNS::Match - Perl extension for testing domains against another list of dom
   use Data::Dumper;
   my $addr = 'img.yahoo.com';
 
-  my $match = Net::DNS::Match->new();
-  $match->add([
+  my $obj = Net::DNS::Match->new();
+  $obj->add([
       'yahoo.com',
       'google.com',
       'www.facebook.com',
    ]);
  
- die Dumper($match->match($addr));
+ die Dumper($obj->match($addr));
 
 =head1 DESCRIPTION
 
@@ -130,9 +169,7 @@ None by default.
 
 =head1 SEE ALSO
 
-collectiveintel.net
-
-github.com/collectiveintel
+github.com/csirtgadgets
 
 =head1 AUTHOR
 

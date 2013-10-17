@@ -1,10 +1,10 @@
 {
    "abstract" : "Perl extension for testing domains against another list of domains (similar to Net::Patricia but for FQDNs)",
    "author" : [
-      "Wesley Young <wes@local>"
+      "Wesley Young <wes@barely3am.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.112150",
+   "generated_by" : "ExtUtils::MakeMaker version 6.78, CPAN::Meta::Converter version 2.132661",
    "license" : [
       "unknown"
    ],
@@ -22,12 +22,12 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : 0
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : 0
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "runtime" : {
@@ -35,5 +35,10 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.04"
+   "resources" : {
+      "repository" : {
+         "url" : "https://github.com/wesyoung/net-dns-match-perl"
+      }
+   },
+   "version" : "0.05"
 }

@@ -1,5 +1,9 @@
 Revision history for Perl extension Net::DNS::Match.
 
+0.05	2013-10017
+    - re-write to use a trie instead of bin-search that works more effectively with the tld's
+    - added some simple tests
+
 0.04    2012-10-10
     - bugfix
 
